@@ -1,2 +1,2 @@
 # pysmags
-A Quality of Life package that includes some advanced modules
+A general purpose Quality of Life package that includes some advanced modules.
