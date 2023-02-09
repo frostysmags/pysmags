@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: pysmags
+Version: 0.0.1
+Summary: A general purpose Quality of Life package that includes some advanced modules.
+Home-page: UNKNOWN
+Author: FrostySmags
+Author-email: <frostysmags+dev@gmail.com>
+License: UNKNOWN
+Keywords: python,qol,threading,sockets,web
+Platform: UNKNOWN
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: Microsoft :: Windows
+
+UNKNOWN
+

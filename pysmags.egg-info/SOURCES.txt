@@ -1,0 +1,11 @@
+setup.py
+pysmags.egg-info/PKG-INFO
+pysmags.egg-info/SOURCES.txt
+pysmags.egg-info/dependency_links.txt
+pysmags.egg-info/requires.txt
+pysmags.egg-info/top_level.txt
+smags/__init__.py
+smags/classes.py
+smags/files.py
+smags/filter.py
+smags/prints.py
