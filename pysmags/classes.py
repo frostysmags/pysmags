@@ -1,4 +1,4 @@
-import threading, queue, time, signal, sys
+import threading, queue, time, signal, os
 
 class QThread:
     def __init__(self, *args:list[callable], **kwargs) -> None:
@@ -33,8 +33,11 @@ class QThread:
         print(f"Stopping Thread Running '{self.threadName}'\n" if self.__debugMode__ else "", end="")
         self.__running__ = False
         self.threadQueue.queue.clear()
-        self.__threadCore__.join()
-    
+        try:
+            self.__threadCore__.join()
+        except Exception as e:
+            print(f"Thread Running '{self.threadName}' Unable to Join\n" if self.__debugMode__ else "", end="")
+
     def __handle_sigint__(self, signum, frame) -> None:
         '''Handles CTRL+C exit signal'''
         if not self.__closing_thread__:
@@ -55,8 +58,7 @@ class QThread:
             self.__threadArgs__[0]()
 
     def __del__(self) -> None:
-        self.threadQueue.queue.clear()
-        self.__threadCore__.join()
+        self.stop()
         print(f"Thread Running '{self.threadName}' Terminated\n" if self.__debugMode__ else "", end="")
 
 
@@ -110,3 +112,55 @@ class TimeThread:
     def stop(self) -> None:
         '''Stops the TimeThread'''
         self.__mainThread__.stop()
+
+class KBThread:
+    def __init__(self, stopcode:str="stop", **kwargs) -> None:
+        '''
+        kwargs: #custom commands you can pass through to the keyboard thread
+        example: exfunc=lambda:somefunc()
+        '''
+        self.__closing_thread__ = False
+        self.__mainThread__ = QThread(self.__keyTrack__,loop=True, **kwargs)
+        self.stopcode = stopcode
+        self.commands = {}
+        self.defaultCommands = {
+            'help': lambda: self.__helpcommand__(),
+            '?': lambda: self.__helpcommand__(),
+            'clear': lambda: os.system("cls"),
+            'cls': lambda: os.system("cls"),
+            self.stopcode: lambda: self.__mainThread__.stop()
+        }
+        for kw in kwargs:
+            if not kw == 'debug' and not kw == 'loop':
+                self.commands[kw] = kwargs[kw]
+        self.runCommand = ""
+        # signal.signal(signal.SIGINT, self.__handle_sigint__) ### THIS CODE TO FIX CTRL+C EXIT SIGNAL
+
+    def start(self) -> None:
+        self.__mainThread__.start()
+
+    def __keyTrack__(self) -> None:
+        if self.__mainThread__.__running__:
+            self.runCommand = input() # ERROR OCCURS WHILE ATTEMPTING CTRL+C EXIT DUE TO INPUT PREMATURE EXIT
+        for command in self.commands:
+            if self.runCommand == command:
+                self.commands[command]()
+                self.runCommand = ""
+        for command in self.defaultCommands:
+            if self.runCommand == command:
+                self.defaultCommands[command]()
+
+    def __helpcommand__(self) -> None:
+        print("Available Commands:")
+        for cmd in self.defaultCommands:
+            print(f"\t-\t{cmd}")
+        for cmd in self.commands:
+            print(f"\t-\t{cmd}")
+        print("_-"*20)
+    ### THIS CODE TO FIX CTRL+C EXIT SIGNAL
+    # def __handle_sigint__(self, signum, frame) -> None:
+    #     '''Handles CTRL+C exit signal'''
+    #     if not self.__closing_thread__:
+    #         self.__closing_thread__ = True
+    #         print(f"Force Shutting Down Thread Running '{self.threadName}'\n" if self.__mainThread__.__debugMode__ else "", end="")
+    #         exit(0)
