@@ -1,21 +1,44 @@
 import threading, queue, time, signal, os
 
 class QThread:
-    def __init__(self, *args:list[callable], **kwargs) -> None:
+    def __init__(self, *args:callable, **kwargs) -> None:
         '''
         args:\n
-        1 REQUIRED: callable variable (function) that the thread will operate\n
+        * A Callable Function passed as a variable: this function will be called by the thread\n
+        * List Arg Functions: (alternate use) example [func0, func0arg0, func0arg1, ..., func0argN], [func1, func1arg0], ..., [funcN, funcNarg0]\n
+        \t└── with this you can operate multiple functions with their respective arguments provided within a list\n
+        \t└── Do not utilize this functionality if your first arg is not of the list arg function type as it will be ignored\n
         kwargs:\n
-        loop:bool # Use to run callable variable 0 (function | args[0]) through a while loop until QThread stop or termination 
-        debug:bool # Use only for debugging purposes - prints status outputs for each function called in QThread
+        * loop:[bool] # Use to run callable variable 0 (function == args[0]) through a while loop until QThread stop or termination\n
+        * debug:[bool] # Use only for debugging purposes - prints status outputs for each function called in QThread\n
+        * name:[string] # to name the QThread - default name will be created and set to passed arg[0] function variable name\n
+        \t\t\tor arg[0][0] if using list arg functions\n
         '''
         self.__debugMode__ = False;self.__running__ = True;self.__threadCore__ = None;self.__threadArgs__ = args;self.__threadKWArgs__ = kwargs;self.__closing_thread__=False
-        self.threadQueue = queue.Queue();self.threadName = args[0].__name__.strip("_")
+        self.threadQueue = queue.Queue(); self.__threadActiveType__ = None
+        if len(args) > 1:
+            self.__threadActiveType__ = 'multi'
+            for arg in args:
+                if type(arg) != list:
+                    print('ERROR')
+                    raise Exception("Types provided in QThread are not all of type: list")
+            self.threadName = args[0][0].__name__.strip("_")
+        elif len(args) == 1:
+            self.__threadActiveType__ = 'mono'
+            if type(args[0]) == list:
+                self.__threadActiveType__ = 'monolist'
+                self.threadName = args[0][0].__name__.strip("_")
+            else:
+                self.threadName = args[0].__name__.strip("_")
+        else:
+            print("WARNING!!! A THREAD HAS NO RUNNING PROCESS - DEBUG AND OTHER FUNCTIONALITY MAY CRASH THE PROGRAM")
         if 'loop' in kwargs and kwargs['loop'] == True:
             self.__threadCore__ = threading.Thread(target=self.__loopThreadFunction__)
         else:
             self.__threadCore__ = threading.Thread(target=self.__threadFunction__)
         if 'debug' in kwargs and kwargs['debug'] == True: self.__debugMode__ = True
+        if 'name' in kwargs: self.threadName = kwargs['name']
+        print(f"Thread '{self.threadName}' active type is '{self.__threadActiveType__}'\n" if self.__debugMode__ else "", end="")
         signal.signal(signal.SIGINT, self.__handle_sigint__)
         
     def clearQueue(self) -> None:
@@ -49,8 +72,13 @@ class QThread:
 
     def __threadFunction__(self) -> None:
         '''Runs all callable variables (functions) once'''
-        for func in self.__threadArgs__:
-            func()
+        if self.__threadActiveType__ == 'mono':
+                self.__threadArgs__[0]()
+        elif self.__threadActiveType__ == 'monolist':
+            self.__threadArgs__[0][0](*self.__threadArgs__[0][1:])
+        elif self.__threadActiveType__ == 'multi':
+            for func in self.__threadArgs__:
+                func[0](*func[1:])
     
     def __loopThreadFunction__(self) -> None:
         '''Runs args[0] through a while loop until QThread stop or termination'''
@@ -66,9 +94,9 @@ class TimeThread:
     def __init__(self, start_on_create:bool=True, **kwargs) -> None:
         '''
         A Thread that runs in the background keeping track of how long the thread's been active\n
-        start_on_create # Default: True | Starts the thread upon instantiation
+        * start_on_create # Default: True | Starts the thread upon instantiation\n
         kwargs:\n
-        debug=True # Use only for debugging purposes - prints status outputs for each function called in QThread
+        * debug=True # Use only for debugging purposes - prints status outputs for each function called in QThread\n
         '''
         self.__mainThread__ = QThread(self.__timeTrack__, loop=True, **kwargs)
         self.__clock__ = {
@@ -76,9 +104,9 @@ class TimeThread:
             'minutes': 0,
             'hours' : 0
         }
-        if start_on_create: self.__start__()
+        if start_on_create: self.__mainThread__.start()
 
-    def __start__(self) -> None:
+    def start(self) -> None:
         '''Initializes the TimeThread to start tracking time'''
         self.__mainThread__.start()
     
@@ -128,7 +156,8 @@ class KBThread:
             '?': lambda: self.__helpcommand__(),
             'clear': lambda: os.system("cls"),
             'cls': lambda: os.system("cls"),
-            self.stopcode: lambda: self.__mainThread__.stop()
+            # self.stopcode: lambda: self.__mainThread__.stop()
+            self.stopcode: lambda: self.stop()
         }
         for kw in kwargs:
             if not kw == 'debug' and not kw == 'loop':
@@ -138,6 +167,15 @@ class KBThread:
 
     def start(self) -> None:
         self.__mainThread__.start()
+
+    def isRunning(self) -> bool:
+        if self.__mainThread__.__running__:
+            return True
+        else:
+            return False
+
+    def stop(self) -> None:
+        self.__mainThread__.stop()
 
     def __keyTrack__(self) -> None:
         if self.__mainThread__.__running__:
