@@ -40,7 +40,7 @@ class QThread:
         '''
         args:\n
         * A Callable Function passed as a variable: this function will be called by the thread\n
-        * List Arg Functions: (alternate use) example [func0, func0arg0, fu_nc0arg1, ..., func0argN], [func1, func1arg0], ..., [funcN, funcNarg0]\n
+        * List Arg Functions: (alternate use) example [func0, func0arg0, func0arg1, ..., func0argN], [func1, func1arg0], ..., [funcN, funcNarg0]\n
         \t└── with this you can operate multiple functions with their respective arguments provided within a list\n
         \t└── Do not utilize this functionality if your first arg is not of the list arg function type as it will be ignored\n
         kwargs:\n
