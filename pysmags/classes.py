@@ -1,11 +1,46 @@
-import threading, queue, time, signal, os
+import threading, queue, time, signal, os, subprocess, psutil, datetime
+
+class ServerCore: # STILL TESTING CLASS
+    def __init__(self, start_parameters:str, logs_output_path:str=os.path(__file__)) -> None:
+        self.core=None;self.logs = {};self.console = [];self.__starting_parameters__ = start_parameters;self.logs_output = logs_output_path
+
+    def start_server(self) -> None:
+        self.core = subprocess.Popen(self.__starting_parameters__, stdin=subprocess.PIPE)
+        self.__log__('Server Subprocess Started')
+
+    def stop_server(self) -> None:
+        self.core.terminate()
+        self.__log__('Server Subprocess Terminated')
+
+    def write(self, command:str) -> None:
+        self.__log__(f'Command Issued - {command}')
+        self.core.stdin.write(f"{command}\n".encode('utf-8'))
+        self.core.stdin.flush()
+
+    def __log__(self, inf:str) -> None:
+        self.logs[str(datetime.datetime.now().replace(microsecond=0))] = f'{inf}'
+
+    def get_server_status(self) -> bool:
+        self.__log__('Request Made for Server Subprocess Status')
+        if self.core.poll() is None:
+            self.__log__('Core Response Subprocess is Active')
+            return True
+        else:
+            self.__log__('Core Response Subprocess is Not Active')
+            return False
+        
+    def __output_logs__(self):
+        self.__log__(f'Exporting Log Data -> {self.logs_output}')
+        with open(str(self.logs_output+str(datetime.datetime.now().replace(microsecond=0)))) as f:
+            for log in self.logs:
+                f.write(log+'\n')
 
 class QThread:
     def __init__(self, *args:callable, **kwargs) -> None:
         '''
         args:\n
         * A Callable Function passed as a variable: this function will be called by the thread\n
-        * List Arg Functions: (alternate use) example [func0, func0arg0, func0arg1, ..., func0argN], [func1, func1arg0], ..., [funcN, funcNarg0]\n
+        * List Arg Functions: (alternate use) example [func0, func0arg0, fu_nc0arg1, ..., func0argN], [func1, func1arg0], ..., [funcN, funcNarg0]\n
         \t└── with this you can operate multiple functions with their respective arguments provided within a list\n
         \t└── Do not utilize this functionality if your first arg is not of the list arg function type as it will be ignored\n
         kwargs:\n
